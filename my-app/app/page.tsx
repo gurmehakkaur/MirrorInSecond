@@ -1,60 +1,259 @@
 "use client";
 import { useState } from "react";
 
-// ── Icons ──────────────────────────────────────────────────────────────────────
+const YELLOW = "#e8d84b";
+const YELLOW_DIM = "#e8d84b22";
+const YELLOW_BORDER = "#e8d84b44";
+const BG = "#0e0e0e";
+const SURFACE = "#141414";
+const CARD = "#181818";
+const BORDER = "#252525";
+const MUTED = "#555";
+const SUBTLE = "#888";
 
-// Card icons (larger)
-const BriefcaseCardIcon = () => (
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" strokeWidth="3" />
-    <path d="M2 12h20" />
-  </svg>
-);
-const UploadCardIcon = () => (
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
-  </svg>
-);
-
-// ── Nav items ──────────────────────────────────────────────────────────────────
-const projects = [
-  "Housing Service",
-  "Rewards Service",
-  "Careers Service",
-  "Document Vault",
-  "Offers",
+const mockVersions = [
+  { scenario: "Housing Service v2", user: "alice@acme.com", url: "https://housing-v2.mirrored.dev", syntheticData: "Tenants, Listings, Leases", syntheticApis: "Stripe, SendGrid" },
+  { scenario: "Rewards MVP", user: "bob@acme.com", url: "https://rewards-mvp.mirrored.dev", syntheticData: "Users, Points, Redemptions", syntheticApis: "Twilio, Mailchimp" },
+  { scenario: "Careers Staging", user: "carol@acme.com", url: "https://careers-staging.mirrored.dev", syntheticData: "Jobs, Applicants, Interviews", syntheticApis: "LinkedIn, Greenhouse" },
 ];
+
+const projects = ["Housing Service", "Rewards Service", "Careers Service", "Document Vault", "Offers"];
+
+const features = [
+  { icon: "⚡", title: "Instant Sandboxes", desc: "Fresh environments from your exact source code and synthetic data." },
+  { icon: "🎭", title: "Role-Based Scenarios", desc: "Simulate admins, reviewers, and end-users in the same flow." },
+  { icon: "🧠", title: "Reusable Flows", desc: "Save workflows once, replay them across any environment." },
+  { icon: "🔒", title: "Safe by Default", desc: "No real APIs, no real credentials. Fully sandboxed." },
+];
+
+const steps = ["Add your application", "Define scenarios", "Launch a sandbox", "Share the environment"];
+
+// ── New Application View ───────────────────────────────────────────────────────
+function NewApplicationView({ onBack }: { onBack: () => void }) {
+  const [githubUrl, setGithubUrl] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  return (
+    <div
+      className="flex flex-col gap-8 px-12 py-10 min-h-full"
+      style={{ backgroundColor: BG, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+    >
+      {/* Back */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 w-fit text-sm font-medium transition-colors"
+        style={{ color: MUTED }}
+        onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+        onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back
+      </button>
+
+      {/* Header */}
+      <div style={{ borderBottom: `1px solid ${BORDER}`, paddingBottom: "1.5rem" }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: YELLOW }}>New Application</p>
+        <h1 className="text-3xl font-black tracking-tight text-white">Connect a repository.</h1>
+        <p className="mt-2 text-sm" style={{ color: SUBTLE }}>Paste a GitHub URL to spin up a mirrored environment in seconds.</p>
+      </div>
+
+      {/* GitHub input card */}
+      <div
+        className="rounded-2xl p-6"
+        style={{
+          backgroundColor: CARD,
+          border: `1px solid ${BORDER}`,
+          boxShadow: `0 0 30px ${YELLOW_DIM}`,
+        }}
+      >
+        <label className="block text-xs font-bold uppercase tracking-widest mb-4" style={{ color: MUTED }}>
+          GitHub Repository URL
+        </label>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: MUTED }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+            </span>
+            <input
+              type="url"
+              placeholder="https://github.com/your-org/your-repo"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-all"
+              style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}`, color: "#fff" }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = YELLOW;
+                e.currentTarget.style.boxShadow = `0 0 0 3px ${YELLOW_DIM}`;
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = BORDER;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+          </div>
+          <button
+            onClick={() => setSubmitted(true)}
+            disabled={!githubUrl.trim()}
+            className="rounded-xl px-6 py-3 text-sm font-black transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ backgroundColor: YELLOW, color: "#000" }}
+            onMouseEnter={e => !githubUrl.trim() || (e.currentTarget.style.filter = "brightness(1.1)")}
+            onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+          >
+            Submit
+          </button>
+        </div>
+        {submitted && (
+          <div className="mt-3 flex items-center gap-2 text-xs font-semibold" style={{ color: YELLOW }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Repo linked successfully.
+          </div>
+        )}
+      </div>
+
+      {/* Spin up */}
+      <div>
+        <button
+          className="flex items-center gap-2.5 rounded-full px-8 py-3.5 text-sm font-black tracking-wide uppercase transition-all"
+          style={{ backgroundColor: YELLOW, color: "#000", boxShadow: `0 0 24px ${YELLOW_BORDER}` }}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 40px ${YELLOW}55`)}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = `0 0 24px ${YELLOW_BORDER}`)}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          Spin Up New Version
+        </button>
+      </div>
+
+      {/* Past Versions */}
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between pb-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Past Versions</p>
+          <span
+            className="rounded-full px-3 py-0.5 text-xs font-semibold"
+            style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}`, color: SUBTLE }}
+          >
+            {mockVersions.length} environments
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          {mockVersions.map((v, i) => (
+            <div
+              key={i}
+              className="flex flex-col rounded-2xl overflow-hidden transition-all"
+              style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = YELLOW_BORDER;
+                e.currentTarget.style.boxShadow = `0 0 20px ${YELLOW_DIM}`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = BORDER;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              {/* Card header */}
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}
+              >
+                <span className="text-xs font-black uppercase tracking-widest" style={{ color: MUTED }}>v{i + 1}</span>
+                <span
+                  className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide"
+                  style={{ backgroundColor: "#00d4aa18", color: "#00d4aa" }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#00d4aa]" />
+                  Live
+                </span>
+              </div>
+
+              {/* Fields */}
+              {[
+                { label: "Scenario", value: v.scenario, bold: true },
+                { label: "User", value: v.user },
+                { label: "URL", value: v.url, link: true },
+                { label: "Synthetic Data", value: v.syntheticData },
+                { label: "Ext. APIs", value: v.syntheticApis },
+              ].map(({ label, value, bold, link }, fi) => (
+                <div
+                  key={label}
+                  className="px-4 py-3"
+                  style={{ borderBottom: fi < 4 ? `1px solid ${BORDER}` : "none" }}
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: MUTED }}>{label}</p>
+                  {link ? (
+                    <a
+                      href={value}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate block text-xs font-medium transition-opacity hover:opacity-70"
+                      style={{ color: YELLOW }}
+                    >
+                      {value}
+                    </a>
+                  ) : (
+                    <p className="text-xs" style={{ color: bold ? "#fff" : SUBTLE, fontWeight: bold ? 700 : 400 }}>
+                      {value}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [bannerOpen, setBannerOpen] = useState(true);
+  const [view, setView] = useState<"home" | "new-app">("home");
 
   return (
-    <div className="flex h-screen w-full overflow-hidden" style={{ fontFamily: "var(--font-geist-sans), Arial, sans-serif" }}>
-
+    <div
+      className="flex h-screen w-full overflow-hidden"
+      style={{ fontFamily: "var(--font-inter), system-ui, sans-serif", backgroundColor: BG }}
+    >
       {/* ── Sidebar ── */}
       <aside
-        className="flex w-56 flex-shrink-0 flex-col py-4"
-        style={{ backgroundColor: "#1b1b2f" }}
+        className="flex w-56 flex-shrink-0 flex-col py-5"
+        style={{ backgroundColor: SURFACE, borderRight: `1px solid ${BORDER}` }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-5 pb-5">
-          <span className="text-base font-semibold text-white">MirrorInSeconds.ai</span>
+        <div
+          className="flex items-center gap-2.5 px-5 pb-5"
+          style={{ borderBottom: `1px solid ${BORDER}` }}
+        >
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black flex-shrink-0"
+            style={{ backgroundColor: YELLOW, color: "#000" }}
+          >
+            M
+          </div>
+          <span className="text-sm font-bold text-white">MirrorInSeconds</span>
         </div>
 
-        {/* Onboarded Projects */}
-        <nav className="flex flex-col px-4">
-          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
-            Onboarded Projects
-          </p>
+        <nav className="flex flex-col px-3 pt-4 gap-0.5">
+          <p className="mb-2 px-2 text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Projects</p>
           {projects.map((name) => (
             <button
               key={name}
-              className="w-full rounded-md px-3 py-2.5 text-left text-sm font-medium text-gray-300 transition-colors hover:bg-[#2c2c48] hover:text-white"
+              className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all"
+              style={{ color: SUBTLE }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = CARD;
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = SUBTLE;
+              }}
             >
               {name}
             </button>
@@ -63,103 +262,161 @@ export default function Home() {
       </aside>
 
       {/* ── Main ── */}
-      <main className="flex flex-1 flex-col overflow-y-auto" style={{ backgroundColor: "#efefef" }}>
+      <main className="flex flex-1 flex-col overflow-y-auto" style={{ backgroundColor: BG }}>
 
-        {/* Yellow announcement banner */}
-        {bannerOpen && (
-          <div
-            className="mx-4 mt-4 flex items-center justify-between rounded px-5 py-3"
-            style={{ backgroundColor: "#d9e84a" }}
-          >
-            <p className="text-sm font-medium text-gray-900">
-              Join Our Webinars. Live Q&amp;A with lawyers and experts.
-            </p>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-1 rounded border border-gray-800 bg-transparent px-4 py-1.5 text-sm font-medium text-gray-900 hover:bg-gray-900 hover:text-white transition-colors">
-                Register &rarr;
-              </button>
-              <button
-                onClick={() => setBannerOpen(false)}
-                className="text-base text-gray-700 hover:text-gray-900 leading-none"
-                aria-label="Close banner"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
+        {view === "home" ? (
+          <div className="flex flex-col">
 
-        {/* Inner content padding */}
-        <div className="flex flex-col gap-6 px-8 py-6">
-
-          {/* Product Tour button */}
-          <div>
-            <button className="rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors">
-              Start Product Tour ✨
-            </button>
-          </div>
-
-          {/* Two cards */}
-          <div className="flex gap-6">
-
-            {/* Application Hub */}
-            <div className="flex flex-1 flex-col rounded-2xl bg-white p-8 shadow-sm">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="mt-1 flex-shrink-0">
-                  <BriefcaseCardIcon />
-                </div>
-                <div>
-                  <h2 className="mb-2 text-xl font-semibold text-gray-900">Application Hub</h2>
-                  <p className="text-sm leading-relaxed text-gray-500">
-                    Apply to study, work, build a pathway to permanent residence, and more
-                  </p>
-                </div>
-              </div>
-              <div className="mt-auto">
-                <button className="w-full rounded-full bg-gray-900 py-3.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
-                  View your applications
-                </button>
-              </div>
-            </div>
-
-            {/* Upload Study Permit */}
+            {/* ── Hero ── */}
             <div
-              className="flex flex-1 flex-col rounded-2xl p-8 shadow-sm"
-              style={{ backgroundColor: "#6ecfc4" }}
+              className="relative flex flex-col px-16 py-20 gap-7 overflow-hidden"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
             >
-              <div className="flex items-start gap-4 mb-6">
-                <div className="mt-1 flex-shrink-0">
-                  <UploadCardIcon />
-                </div>
-                <div>
-                  <h2 className="mb-2 text-xl font-semibold text-gray-900">Upload Your Study Permit</h2>
-                  <p className="text-sm leading-relaxed text-gray-800">
-                    Uploading keeps your documents in one place and allows BorderPass to provide guidance that fits your situation.
-                  </p>
-                </div>
+              {/* Subtle yellow glow top-left */}
+              <div
+                className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full"
+                style={{ background: `radial-gradient(circle, ${YELLOW}12 0%, transparent 70%)` }}
+              />
+
+              <span
+                className="w-fit rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-widest"
+                style={{ backgroundColor: YELLOW_DIM, border: `1px solid ${YELLOW_BORDER}`, color: YELLOW }}
+              >
+                AI-Powered Environment Mirroring
+              </span>
+
+              <h1 className="text-[3.5rem] font-black leading-[1.05] tracking-tight text-white max-w-2xl">
+                Mirror your app.<br />
+                Test without risk.<br />
+                <span style={{ color: YELLOW }}>In seconds.</span>
+              </h1>
+
+              <div className="flex flex-col gap-2.5">
+                {[
+                  "Synthetic data — no prod data or APIs touched",
+                  "Log in as admin or user — all roles available",
+                  "Reusable flows — save once, replay everywhere",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2.5">
+                    <span
+                      className="flex h-4 w-4 items-center justify-center rounded-full flex-shrink-0"
+                      style={{ backgroundColor: YELLOW }}
+                    >
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    <span className="text-sm" style={{ color: SUBTLE }}>{item}</span>
+                  </div>
+                ))}
               </div>
-              <div className="mt-auto">
-                <button className="w-full rounded-full bg-gray-900 py-3.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
-                  Upload Your Study Permit
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setView("new-app")}
+                  className="flex items-center gap-2.5 rounded-full px-8 py-3.5 text-sm font-black uppercase tracking-wide transition-all"
+                  style={{ backgroundColor: YELLOW, color: "#000", boxShadow: `0 0 30px ${YELLOW}44` }}
+                  onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 50px ${YELLOW}66`)}
+                  onMouseLeave={e => (e.currentTarget.style.boxShadow = `0 0 30px ${YELLOW}44`)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add New Application
                 </button>
+                <button
+                  className="flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold uppercase tracking-wide transition-all"
+                  style={{ backgroundColor: "transparent", border: `1px solid ${BORDER}`, color: SUBTLE }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = MUTED;
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = BORDER;
+                    e.currentTarget.style.color = SUBTLE;
+                  }}
+                >
+                  View Docs →
+                </button>
+              </div>
+
+              <p className="text-xs font-medium" style={{ color: MUTED }}>
+                Paste a GitHub repository and generate reusable testing environments.
+              </p>
+
+              {/* Steps row at bottom of hero */}
+              <div
+                className="flex rounded-2xl overflow-hidden mt-4"
+                style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}
+              >
+                {steps.map((step, i) => (
+                  <div
+                    key={step}
+                    className="flex items-center gap-3 px-6 py-4 flex-1 transition-all"
+                    style={{ borderRight: i < steps.length - 1 ? `1px solid ${BORDER}` : "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = SURFACE)}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <span
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-black flex-shrink-0"
+                      style={{ backgroundColor: YELLOW, color: "#000" }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="text-xs font-semibold text-white leading-snug">{step}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-          </div>
-        </div>
+            {/* ── Feature Highlights ── */}
+            <div className="px-16 py-14" style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-10" style={{ color: MUTED }}>Feature Highlights</p>
+              <div className="grid grid-cols-4 gap-4 max-w-4xl">
+                {features.map((f) => (
+                  <div
+                    key={f.title}
+                    className="flex flex-col gap-4 rounded-2xl p-5 transition-all cursor-default"
+                    style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = YELLOW_BORDER;
+                      e.currentTarget.style.boxShadow = `0 0 20px ${YELLOW_DIM}`;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = BORDER;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-lg"
+                      style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
+                    >
+                      {f.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white mb-1.5">{f.title}</p>
+                      <p className="text-xs leading-relaxed" style={{ color: SUBTLE }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* Floating bottom-right buttons */}
-        <div className="fixed bottom-5 right-5 flex gap-2">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors text-sm font-bold italic">
-            i
-          </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9 9a3 3 0 1 1 4 2.83V13M12 17h.01" />
-            </svg>
-          </button>
-        </div>
+            {/* ── Footer ── */}
+            <div
+              className="flex items-center justify-center px-16 py-5"
+              style={{ borderTop: `1px solid ${BORDER}` }}
+            >
+              <p className="text-xs font-medium" style={{ color: MUTED }}>
+                Built for teams that need reliable demos and repeatable QA.
+              </p>
+            </div>
+
+          </div>
+        ) : (
+          <NewApplicationView onBack={() => setView("home")} />
+        )}
       </main>
     </div>
   );
