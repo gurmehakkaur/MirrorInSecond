@@ -2,76 +2,6 @@
 import { useState } from "react";
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
-const HomeIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-const GridIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-const ShieldIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-const FlagIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-    <line x1="4" y1="22" x2="4" y2="15" />
-  </svg>
-);
-const SparkleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-  </svg>
-);
-const BuildingIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="10" width="18" height="12" rx="1" /><path d="M3 10L12 3l9 7" />
-    <rect x="9" y="14" width="6" height="8" />
-  </svg>
-);
-const GiftIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 12 20 22 4 22 4 12" />
-    <rect x="2" y="7" width="20" height="5" rx="1" />
-    <line x1="12" y1="22" x2="12" y2="7" />
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-  </svg>
-);
-const CalendarIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" />
-    <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-const FileIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-  </svg>
-);
-const BriefcaseNavIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" strokeWidth="4" />
-    <path d="M2 12h20" />
-  </svg>
-);
-const UserIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 
 // Card icons (larger)
 const BriefcaseCardIcon = () => (
@@ -91,17 +21,12 @@ const UploadCardIcon = () => (
 );
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
-const navItems = [
-  { icon: <HomeIcon />, label: "Home", highlight: "blue" },
-  { icon: <GridIcon />, label: "Applications" },
-  { icon: <ShieldIcon />, label: "Document Vault" },
-  { icon: <FlagIcon />, label: "Express Entry" },
-  { icon: <SparkleIcon />, label: "Offers & Benefits", selected: true },
-  { icon: <BuildingIcon />, label: "Housing" },
-  { icon: <GiftIcon />, label: "Rewards" },
-  { icon: <CalendarIcon />, label: "Consult a Lawyer" },
-  { icon: <FileIcon />, label: "Resources" },
-  { icon: <BriefcaseNavIcon />, label: "Careers" },
+const projects = [
+  "Housing Service",
+  "Rewards Service",
+  "Careers Service",
+  "Document Vault",
+  "Offers",
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -118,45 +43,22 @@ export default function Home() {
       >
         {/* Logo */}
         <div className="flex items-center gap-2 px-5 pb-5">
-          <div className="flex gap-1">
-            <div className="h-4 w-4 rounded-sm bg-white opacity-90" />
-            <div className="h-4 w-4 rounded-full bg-white opacity-90" />
-            <div className="h-4 w-4 rounded-full bg-white opacity-90" />
-          </div>
-          <span className="text-base font-semibold text-white">BorderPass</span>
+          <span className="text-base font-semibold text-white">MirrorInSeconds.ai</span>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex flex-col gap-0.5 px-2">
-          {navItems.map((item) => (
+        {/* Onboarded Projects */}
+        <nav className="flex flex-col px-4">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
+            Onboarded Projects
+          </p>
+          {projects.map((name) => (
             <button
-              key={item.label}
-              className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-left transition-colors
-                ${item.highlight === "blue"
-                  ? "text-[#4A90D9]"
-                  : item.selected
-                  ? "bg-[#2c2c48] text-white"
-                  : "text-gray-400 hover:bg-[#2c2c48] hover:text-white"
-                }`}
+              key={name}
+              className="w-full rounded-md px-3 py-2.5 text-left text-sm font-medium text-gray-300 transition-colors hover:bg-[#2c2c48] hover:text-white"
             >
-              <span className={item.highlight === "blue" ? "text-[#4A90D9]" : item.selected ? "text-white" : "text-gray-500"}>
-                {item.icon}
-              </span>
-              {item.label}
+              {name}
             </button>
           ))}
-
-          {/* Profile with red dot */}
-          <button className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-400 text-left hover:bg-[#2c2c48] hover:text-white transition-colors">
-            <span className="relative text-gray-500">
-              <UserIcon />
-              <span
-                className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500"
-                style={{ border: "2px solid #1b1b2f" }}
-              />
-            </span>
-            Profile
-          </button>
         </nav>
       </aside>
 
