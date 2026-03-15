@@ -24,6 +24,10 @@ COPY server/ ./
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
+# Docker CLI + git are needed by the sandbox launcher
+# docker-cli talks to the host Docker daemon via the mounted socket
+RUN apk add --no-cache docker-cli git
+
 WORKDIR /app
 
 ENV NODE_ENV=production

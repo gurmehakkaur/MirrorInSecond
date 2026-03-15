@@ -286,15 +286,19 @@ function ProjectDetailView({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ repoUrl: project.githubUrl, syntheticData: s.syntheticData }),
         });
-        const launchData = await launchRes.json();
-        if (!launchRes.ok) throw new Error(launchData.detail || launchData.error || "Launch failed");
+        const launchText = await launchRes.text();
+        let launchData: { url?: string; error?: string; detail?: string } = {};
+        try { launchData = JSON.parse(launchText); } catch { /* non-JSON body */ }
+        if (!launchRes.ok) throw new Error(launchData.detail || launchData.error || launchText || "Launch failed");
 
         // Save url + isLive back to the scenario
-        const updated = await fetch(`${API}/scenarios/${s._id}`, {
+        const patchRes = await fetch(`${API}/scenarios/${s._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isLive: true, url: launchData.url }),
-        }).then(r => r.json());
+        });
+        if (!patchRes.ok) throw new Error(`Failed to save scenario state (${patchRes.status})`);
+        const updated = await patchRes.json();
 
         setScenarios(prev => prev.map(x => x._id === s._id ? updated : x));
       } catch (err: unknown) {
