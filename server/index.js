@@ -1,70 +1,66 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
+const mongoose = require("mongoose");
+const Project = require("./models/Project");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const DATA_FILE = path.join(__dirname, "data", "projects.json");
-
-// MongoDB URL available for future use
 const MONGODB_URL = process.env.MONGODB_URL || "mongodb://localhost:27017/mirrorinseconds";
-console.log(`MongoDB URL configured: ${MONGODB_URL} (not connected yet — using JSON store)`);
 
 app.use(cors());
 app.use(express.json());
 
-const readProjects = () => JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-const writeProjects = (data) => fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+// ── Connect to MongoDB ────────────────────────────────────────────────────────
+mongoose
+  .connect(MONGODB_URL)
+  .then(() => console.log(`MongoDB connected: ${MONGODB_URL}`))
+  .catch((err) => { console.error("MongoDB connection error:", err); process.exit(1); });
+
+// ── Routes ────────────────────────────────────────────────────────────────────
 
 // GET all projects
-app.get("/api/projects", (req, res) => {
-  res.json(readProjects());
+app.get("/api/projects", async (_req, res) => {
+  const projects = await Project.find().sort({ createdAt: -1 });
+  res.json(projects);
 });
 
 // GET single project
-app.get("/api/projects/:id", (req, res) => {
-  const project = readProjects().find((p) => p.id === req.params.id);
+app.get("/api/projects/:id", async (req, res) => {
+  const project = await Project.findById(req.params.id);
   if (!project) return res.status(404).json({ error: "Not found" });
   res.json(project);
 });
 
 // POST create project
-app.post("/api/projects", (req, res) => {
-  const projects = readProjects();
-  const newProject = {
-    id: Date.now().toString(),
-    scenario: req.body.scenario || "",
-    githubUrl: req.body.githubUrl || "",
-    syntheticData: req.body.syntheticData || {},
-    role: req.body.role || "user",
-    userId: req.body.userId || "",
+app.post("/api/projects", async (req, res) => {
+  const project = await Project.create({
+    scenario:     req.body.scenario     || "",
+    githubUrl:    req.body.githubUrl    || "",
+    syntheticData:req.body.syntheticData|| {},
+    role:         req.body.role         || "user",
+    userId:       req.body.userId       || "",
     userPassword: req.body.userPassword || "",
-    isLive: req.body.isLive ?? false,
-  };
-  projects.push(newProject);
-  writeProjects(projects);
-  res.status(201).json(newProject);
+    isLive:       req.body.isLive       ?? false,
+  });
+  res.status(201).json(project);
 });
 
 // PATCH update project
-app.patch("/api/projects/:id", (req, res) => {
-  const projects = readProjects();
-  const idx = projects.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  projects[idx] = { ...projects[idx], ...req.body };
-  writeProjects(projects);
-  res.json(projects[idx]);
+app.patch("/api/projects/:id", async (req, res) => {
+  const project = await Project.findByIdAndUpdate(
+    req.params.id,
+    { $set: req.body },
+    { new: true }
+  );
+  if (!project) return res.status(404).json({ error: "Not found" });
+  res.json(project);
 });
 
 // DELETE project
-app.delete("/api/projects/:id", (req, res) => {
-  const projects = readProjects();
-  const idx = projects.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  const [deleted] = projects.splice(idx, 1);
-  writeProjects(projects);
-  res.json(deleted);
+app.delete("/api/projects/:id", async (req, res) => {
+  const project = await Project.findByIdAndDelete(req.params.id);
+  if (!project) return res.status(404).json({ error: "Not found" });
+  res.json(project);
 });
 
 // Health check

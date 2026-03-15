@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 const API = "/api";
 
 type Project = {
-  id: string;
+  _id: string;
   scenario: string;
   githubUrl: string;
   syntheticData: Record<string, unknown>;
@@ -153,16 +153,16 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
 
   const handleDelete = async (id: string) => {
     await fetch(`${API}/projects/${id}`, { method: "DELETE" });
-    setProjects(prev => prev.filter(p => p.id !== id));
+    setProjects(prev => prev.filter(p => p._id !== id));
   };
 
   const handleToggleLive = async (p: Project) => {
-    const updated = await fetch(`${API}/projects/${p.id}`, {
+    const updated = await fetch(`${API}/projects/${p._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isLive: !p.isLive }),
     }).then(r => r.json());
-    setProjects(prev => prev.map(x => x.id === p.id ? updated : x));
+    setProjects(prev => prev.map(x => x._id === p._id ? updated : x));
   };
 
   const handleSubmitRepo = async () => {
@@ -283,7 +283,7 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
           <div className="grid grid-cols-3 gap-4">
             {projects.map((p) => (
               <div
-                key={p.id}
+                key={p._id}
                 className="flex flex-col rounded-2xl overflow-hidden transition-all"
                 style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = YELLOW_BORDER; e.currentTarget.style.boxShadow = `0 0 20px ${YELLOW_DIM}`; }}
@@ -305,7 +305,7 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
                   </button>
                   {/* Delete */}
                   <button
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => handleDelete(p._id)}
                     className="flex items-center justify-center h-6 w-6 rounded-lg transition-colors"
                     style={{ color: MUTED }}
                     onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
@@ -341,18 +341,18 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
                 {/* Synthetic Data toggle */}
                 <div className="px-4 py-2.5">
                   <button
-                    onClick={() => setExpandedData(expandedData === p.id ? null : p.id)}
+                    onClick={() => setExpandedData(expandedData === p._id ? null : p._id)}
                     className="flex items-center justify-between w-full text-left"
                   >
                     <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>Synthetic Data</p>
                     <svg
                       width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transform: expandedData === p.id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+                      style={{ transform: expandedData === p._id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </button>
-                  {expandedData === p.id && (
+                  {expandedData === p._id && (
                     <pre className="mt-2 text-[10px] leading-relaxed overflow-auto rounded-lg p-2 max-h-36" style={{ backgroundColor: SURFACE, color: SUBTLE }}>
                       {JSON.stringify(p.syntheticData, null, 2)}
                     </pre>

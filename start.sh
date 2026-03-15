@@ -1,6 +1,9 @@
 #!/bin/sh
 echo "Starting MirrorInSeconds..."
 
+# Seed MongoDB (skips if data already exists)
+node /app/server/seed.js
+
 # Express backend on internal port 4000
 PORT=4000 node /app/server/index.js &
 
