@@ -29,9 +29,108 @@ const features = [
 const steps = ["Add your application", "Define scenarios", "Launch a sandbox", "Share the environment"];
 
 // ── New Application View ───────────────────────────────────────────────────────
+function ScenarioModal({ onClose, onLaunch }: { onClose: () => void; onLaunch: (prompt: string) => void }) {
+  const [prompt, setPrompt] = useState("");
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="relative flex flex-col gap-6 rounded-2xl p-8 w-full max-w-lg"
+        style={{
+          backgroundColor: CARD,
+          border: `1px solid ${YELLOW_BORDER}`,
+          boxShadow: `0 0 60px ${YELLOW}22, 0 25px 50px rgba(0,0,0,0.6)`,
+        }}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{ color: MUTED }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+          onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* Icon + heading */}
+        <div className="flex flex-col gap-3">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ backgroundColor: YELLOW_DIM, border: `1px solid ${YELLOW_BORDER}` }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={YELLOW} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: YELLOW }}>Spin Up New Version</p>
+            <h2 className="text-xl font-black tracking-tight text-white">What scenario do you want to spin up?</h2>
+            <p className="mt-1 text-xs" style={{ color: MUTED }}>Describe the test scenario and we'll generate the environment.</p>
+          </div>
+        </div>
+
+        {/* Textarea */}
+        <textarea
+          autoFocus
+          rows={4}
+          placeholder="e.g. Log in as an admin and approve a pending housing application with synthetic tenant data"
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all leading-relaxed"
+          style={{
+            backgroundColor: SURFACE,
+            border: `1px solid ${BORDER}`,
+            color: "#fff",
+          }}
+          onFocus={e => {
+            e.currentTarget.style.borderColor = YELLOW;
+            e.currentTarget.style.boxShadow = `0 0 0 3px ${YELLOW_DIM}`;
+          }}
+          onBlur={e => {
+            e.currentTarget.style.borderColor = BORDER;
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        />
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="text-sm font-semibold transition-colors"
+            style={{ color: MUTED }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { if (prompt.trim()) onLaunch(prompt); }}
+            disabled={!prompt.trim()}
+            className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-black uppercase tracking-wide transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ backgroundColor: YELLOW, color: "#000", boxShadow: prompt.trim() ? `0 0 20px ${YELLOW}44` : "none" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Launch
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NewApplicationView({ onBack }: { onBack: () => void }) {
   const [githubUrl, setGithubUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   return (
     <div
@@ -117,8 +216,15 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Spin up */}
+      {showModal && (
+        <ScenarioModal
+          onClose={() => setShowModal(false)}
+          onLaunch={(prompt) => { console.log("Launching:", prompt); setShowModal(false); }}
+        />
+      )}
       <div>
         <button
+          onClick={() => setShowModal(true)}
           className="flex items-center gap-2.5 rounded-full px-8 py-3.5 text-sm font-black tracking-wide uppercase transition-all"
           style={{ backgroundColor: YELLOW, color: "#000", boxShadow: `0 0 24px ${YELLOW_BORDER}` }}
           onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 40px ${YELLOW}55`)}
