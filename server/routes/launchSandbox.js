@@ -30,6 +30,7 @@ const router = express.Router();
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const DOCKER          = "/usr/bin/docker";
 const DOCKER_NETWORK  = "sandbox_network";
 const APP_PORT        = 3000;          // port the cloned app listens on inside its container
 const MONGO_RETRIES   = 24;            // × 2 500 ms = 60 s max wait
@@ -87,10 +88,10 @@ function buildMeta(repoUrl) {
 
 async function ensureNetwork() {
   try {
-    await run(`docker network inspect ${DOCKER_NETWORK}`, "network");
+    await run(`${DOCKER} network inspect ${DOCKER_NETWORK}`, "network");
     console.log(`[network] '${DOCKER_NETWORK}' already exists — reusing`);
   } catch {
-    await run(`docker network create ${DOCKER_NETWORK}`, "network");
+    await run(`${DOCKER} network create ${DOCKER_NETWORK}`, "network");
     console.log(`[network] Created '${DOCKER_NETWORK}'`);
   }
 }
@@ -101,7 +102,7 @@ async function ensureNetwork() {
 
 async function startMongo(mongoContainer) {
   await run(
-    `docker run -d --name ${mongoContainer} --network ${DOCKER_NETWORK} ` +
+    `${DOCKER} run -d --name ${mongoContainer} --network ${DOCKER_NETWORK} ` +
     `-p 127.0.0.1:0:27017 mongo:7`,
     "mongo"
   );
@@ -115,7 +116,7 @@ async function waitForMongo(mongoContainer) {
   for (let attempt = 1; attempt <= MONGO_RETRIES; attempt++) {
     try {
       await run(
-        `docker exec ${mongoContainer} mongosh --quiet --norc ` +
+        `${DOCKER} exec ${mongoContainer} mongosh --quiet --norc ` +
         `--eval "db.adminCommand({ping:1}).ok"`,
         "mongo-ping",
         10_000
@@ -147,7 +148,7 @@ function parsePort(dockerPortOutput) {
 }
 
 async function getHostPort(containerName, containerPort) {
-  const out = await run(`docker port ${containerName} ${containerPort}`, "port");
+  const out = await run(`${DOCKER} port ${containerName} ${containerPort}`, "port");
   const port = parsePort(out);
   console.log(`[port] ${containerName}:${containerPort} → host:${port}`);
   return port;
@@ -199,7 +200,7 @@ async function cloneRepo(repoUrl, clonePath) {
 
 async function buildDockerImage(imageName, clonePath) {
   await run(
-    `docker build -t ${imageName} ${clonePath}`,
+    `${DOCKER} build -t ${imageName} ${clonePath}`,
     "build",
     600_000           // 10-minute timeout for long builds
   );
@@ -212,7 +213,7 @@ async function startAppContainer(imageName, appContainer, mongoContainer, dbName
   const mongoUrl = `mongodb://${mongoContainer}:27017/${dbName}`;
 
   await run(
-    `docker run -d ` +
+    `${DOCKER} run -d ` +
     `--name ${appContainer} ` +
     `--network ${DOCKER_NETWORK} ` +
     `-e MONGODB_URL="${mongoUrl}" ` +
@@ -229,11 +230,11 @@ async function cleanup(meta) {
   console.log(`[cleanup] Starting teardown for '${meta.sandboxId}'…`);
 
   const steps = [
-    `docker stop  ${meta.appContainer}   2>/dev/null || true`,
-    `docker rm -f ${meta.appContainer}   2>/dev/null || true`,
-    `docker stop  ${meta.mongoContainer} 2>/dev/null || true`,
-    `docker rm -f ${meta.mongoContainer} 2>/dev/null || true`,
-    `docker rmi -f ${meta.imageName}     2>/dev/null || true`,
+    `${DOCKER} stop  ${meta.appContainer}   2>/dev/null || true`,
+    `${DOCKER} rm -f ${meta.appContainer}   2>/dev/null || true`,
+    `${DOCKER} stop  ${meta.mongoContainer} 2>/dev/null || true`,
+    `${DOCKER} rm -f ${meta.mongoContainer} 2>/dev/null || true`,
+    `${DOCKER} rmi -f ${meta.imageName}     2>/dev/null || true`,
     `rm -rf ${meta.clonePath}`,
   ];
 
