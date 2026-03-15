@@ -6,4 +6,3 @@ my-app/.next
 .github
 *.md
 docker-compose*.yml
-start.sh
