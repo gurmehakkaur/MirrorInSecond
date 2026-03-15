@@ -1,18 +1,18 @@
 # MirrorInSeconds.ai — Application Architecture
 
 ```mermaid
-flowchart TD
+flowchart LR
     User(["👤 User"])
 
     subgraph ONBOARD["🔍  Step 1 — Onboard Application"]
-        direction TB
+        direction LR
         GH["GitHub Repository URL"]
         MCP["🤖 GitHub MCP Agent\nAnalyzes codebase:\n• Detects user roles\n• Reads DB models & schemas\n• Identifies API routes\n• Finds auth patterns"]
         CREDS["🔑 OpenAI GPT-4o-mini\nGenerates realistic test\ncredentials per role\n(email + password)"]
     end
 
     subgraph SCENARIO["🎭  Step 2 — Define Scenario"]
-        direction TB
+        direction LR
         DESC["User describes scenario\ne.g. 'Admin approves a pending booking'"]
         SYNTH["🧠 OpenAI GPT-4o-mini\nGenerates schema-accurate\nsynthetic data\n• Matches detected DB schema\n• Embeds generated credentials\n  into users table\n• Creates realistic related records"]
     end
@@ -24,7 +24,7 @@ flowchart TD
     end
 
     subgraph EC2["⚙️  Step 3 — Sandbox Engine (EC2)"]
-        direction TB
+        direction LR
         NET["Create isolated Docker network"]
         MONGO["Spin up MongoDB container\n(per sandbox)"]
         SEED["Seed MongoDB with\nsynthetic data"]
@@ -35,7 +35,7 @@ flowchart TD
     end
 
     subgraph SANDBOX["🌐  Live Sandbox"]
-        direction TB
+        direction LR
         URL["Public URL\nhttp://ec2-ip:port"]
         LOGIN["QA / Demo User\nlogs in with generated\ncredentials"]
         APP["Fully functional app\n✓ Real UI\n✓ Synthetic data\n✓ No prod APIs touched\n✓ Fully isolated"]
