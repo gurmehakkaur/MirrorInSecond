@@ -9,7 +9,8 @@ Given a database schema, a user role, and a short scenario description, generate
 - Is appropriate for the given user role (e.g. admin sees more data, user sees their own records only)
 - Reflects the scenario described by the user
 - Uses plausible fake names, emails, numbers, and dates — never real personal data
-- Returns ONLY a valid JSON object with no explanation, no markdown, no code fences`;
+- Returns ONLY a valid JSON object with no explanation, no markdown, no code fences
+
 
 router.post("/", async (req, res) => {
   const { prompt, role, dbSchema } = req.body;

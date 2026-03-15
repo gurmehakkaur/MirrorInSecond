@@ -462,7 +462,7 @@ function ProjectDetailView({
 }
 
 // ── NewApplicationView ────────────────────────────────────────────────────────
-type TableEntry = { id: string; name: string; fieldInput: string; fields: string[] };
+type TableEntry = { id: string; name: string; jsonPayload: string };
 
 function NewApplicationView({
   onBack,
@@ -481,7 +481,7 @@ function NewApplicationView({
   const [submitted, setSubmitted] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
   const [roleInput, setRoleInput] = useState("");
-  const [tables, setTables] = useState<TableEntry[]>([]);
+  const [tables, setTables] = useState<TableEntry[]>([{ id: "1", name: "", jsonPayload: "" }]);
 
   const addRole = () => {
     const r = roleInput.trim().toLowerCase();
@@ -489,27 +489,11 @@ function NewApplicationView({
     setRoleInput("");
   };
 
-  const addTable = () => {
-    setTables(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, name: "", fieldInput: "", fields: [] }]);
-  };
+  const addTable = () =>
+    setTables(prev => [...prev, { id: `${Date.now()}`, name: "", jsonPayload: "" }]);
 
-  const updateTableName = (id: string, name: string) =>
-    setTables(prev => prev.map(t => t.id === id ? { ...t, name } : t));
-
-  const addField = (id: string) => {
-    setTables(prev => prev.map(t => {
-      if (t.id !== id) return t;
-      const f = t.fieldInput.trim();
-      if (!f || t.fields.includes(f)) return { ...t, fieldInput: "" };
-      return { ...t, fields: [...t.fields, f], fieldInput: "" };
-    }));
-  };
-
-  const removeField = (id: string, field: string) =>
-    setTables(prev => prev.map(t => t.id === id ? { ...t, fields: t.fields.filter(f => f !== field) } : t));
-
-  const updateFieldInput = (id: string, fieldInput: string) =>
-    setTables(prev => prev.map(t => t.id === id ? { ...t, fieldInput } : t));
+  const updateTable = (id: string, patch: Partial<TableEntry>) =>
+    setTables(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
 
   const removeTable = (id: string) =>
     setTables(prev => prev.filter(t => t.id !== id));
@@ -523,7 +507,16 @@ function NewApplicationView({
   const handleSubmit = async () => {
     if (!githubUrl.trim()) return;
     const dbSchemaObj: Record<string, string[]> = {};
-    tables.forEach(t => { if (t.name.trim()) dbSchemaObj[t.name.trim()] = t.fields; });
+    tables.forEach(t => {
+      if (!t.name.trim()) return;
+      try {
+        const parsed = JSON.parse(t.jsonPayload);
+        const sample = Array.isArray(parsed) ? parsed[0] : parsed;
+        dbSchemaObj[t.name.trim()] = (sample && typeof sample === "object") ? Object.keys(sample) : [];
+      } catch {
+        dbSchemaObj[t.name.trim()] = [];
+      }
+    });
 
     const created = await fetch(`${API}/projects`, {
       method: "POST",
@@ -539,7 +532,7 @@ function NewApplicationView({
     setSubmitted(true);
     setGithubUrl("");
     setRoles([]);
-    setTables([]);
+    setTables([{ id: "1", name: "", jsonPayload: "" }]);
     setTimeout(() => setSubmitted(false), 3000);
   };
 
@@ -636,45 +629,25 @@ function NewApplicationView({
 
         {/* Database Schema */}
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Database Schema</label>
-            <button
-              onClick={addTable}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all"
-              style={{ backgroundColor: YELLOW_DIM, border: `1px solid ${YELLOW_BORDER}`, color: YELLOW }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add Table
-            </button>
-          </div>
-          <p className="text-xs mb-4" style={{ color: SUBTLE }}>Define your tables and fields so AI can generate schema-accurate synthetic data</p>
+          <label className="block text-xs font-bold uppercase tracking-widest mb-1" style={{ color: MUTED }}>Database Schema</label>
+          <p className="text-xs mb-4" style={{ color: SUBTLE }}>Paste a sample JSON payload for each table. Fields are extracted automatically.</p>
 
-          {tables.length === 0 ? (
-            <div className="flex items-center justify-center rounded-xl py-6" style={{ border: `1px dashed ${BORDER}` }}>
-              <p className="text-xs" style={{ color: MUTED }}>No tables yet — click Add Table to start</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {tables.map(t => (
-                <div key={t.id} className="rounded-xl p-4" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex h-5 w-5 items-center justify-center rounded flex-shrink-0" style={{ backgroundColor: YELLOW_DIM }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={YELLOW} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="9" x2="9" y2="21" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Table name (e.g. users)"
-                      value={t.name}
-                      onChange={e => updateTableName(t.id, e.target.value)}
-                      className="flex-1 rounded-lg px-3 py-1.5 text-xs outline-none transition-all font-semibold"
-                      style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: "#fff" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = YELLOW; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
-                    />
+          <div className="flex flex-col gap-3">
+            {tables.map((t, i) => (
+              <div key={t.id} className="flex flex-col gap-2 rounded-xl p-4" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest w-4 text-center flex-shrink-0" style={{ color: MUTED }}>{i + 1}</span>
+                  <input
+                    type="text"
+                    placeholder="Table name (e.g. users)"
+                    value={t.name}
+                    onChange={e => updateTable(t.id, { name: e.target.value })}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none transition-all"
+                    style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: "#fff" }}
+                    onFocus={e => { e.currentTarget.style.borderColor = YELLOW; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+                  />
+                  {tables.length > 1 && (
                     <button
                       onClick={() => removeTable(t.id)}
                       className="flex items-center justify-center h-6 w-6 rounded-lg transition-colors flex-shrink-0"
@@ -683,51 +656,37 @@ function NewApplicationView({
                       onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
-                  </div>
-                  <div className="flex flex-col gap-2 pl-8">
-                    {t.fields.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-1">
-                        {t.fields.map(f => (
-                          <span key={f} className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: SUBTLE }}>
-                            {f}
-                            <button onClick={() => removeField(t.id, f)} className="transition-opacity hover:opacity-60" style={{ color: MUTED }}>
-                              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Add field (e.g. email)"
-                        value={t.fieldInput}
-                        onChange={e => updateFieldInput(t.id, e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addField(t.id); } }}
-                        className="flex-1 rounded-lg px-3 py-1.5 text-xs outline-none transition-all"
-                        style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: "#fff" }}
-                        onFocus={e => { e.currentTarget.style.borderColor = MUTED; }}
-                        onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
-                      />
-                      <button
-                        onClick={() => addField(t.id)}
-                        disabled={!t.fieldInput.trim()}
-                        className="rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all disabled:opacity-25"
-                        style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: SUBTLE }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                <textarea
+                  rows={4}
+                  placeholder={`Paste sample JSON (e.g. {"id":1,"email":"alice@example.com","role":"admin"})`}
+                  value={t.jsonPayload}
+                  onChange={e => updateTable(t.id, { jsonPayload: e.target.value })}
+                  className="w-full rounded-lg px-3 py-2.5 text-xs font-mono resize-none outline-none transition-all leading-relaxed"
+                  style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: SUBTLE }}
+                  onFocus={e => { e.currentTarget.style.borderColor = MUTED; e.currentTarget.style.color = "#fff"; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = SUBTLE; }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={addTable}
+            className="mt-3 flex items-center gap-1.5 text-xs font-bold transition-colors"
+            style={{ color: MUTED }}
+            onMouseEnter={e => (e.currentTarget.style.color = YELLOW)}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add another table
+          </button>
         </div>
 
         <div style={{ borderTop: `1px solid ${BORDER}` }} />
