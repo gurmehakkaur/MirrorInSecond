@@ -1,129 +1,110 @@
-# MirrorInSeconds — System Architecture
-
-## Sequence Diagram
+# MirrorInSeconds.ai — Application Architecture
 
 ```mermaid
-sequenceDiagram
-    actor User
-    participant UI as Frontend (Next.js)<br/>Railway
-    participant API as Backend (Express)<br/>Railway
-    participant OpenAI as OpenAI API<br/>GPT-4o-mini
-    participant MongoDB as MongoDB<br/>Railway
-    participant EC2 as Sandbox Engine<br/>EC2 :8080
-    participant DockerNet as Docker Network<br/>on EC2
-    participant SandboxMongo as Sandbox MongoDB<br/>Docker Container
-    participant SandboxApp as Sandbox App<br/>Docker Container
+flowchart TD
+    User(["👤 User"])
 
-    %% ── ONBOARD APPLICATION ──────────────────────────────────────────────────
-    rect rgb(20, 30, 48)
-        Note over User,MongoDB: Phase 1 — Onboard Application
-        User->>UI: Enters GitHub URL + roles + DB schema
-        UI->>API: POST /api/projects
-        API->>OpenAI: Generate test email+password per role
-        OpenAI-->>API: { admin: {email, password}, user: {email, password} }
-        API->>MongoDB: Save Project (githubUrl, roles, dbSchema, roleCredentials)
-        MongoDB-->>API: Project document
-        API-->>UI: Project with roleCredentials
-        UI-->>User: Shows project card with test credentials per role
+    subgraph ONBOARD["🔍  Step 1 — Onboard Application"]
+        direction TB
+        GH["GitHub Repository URL"]
+        MCP["🤖 GitHub MCP Agent\nAnalyzes codebase:\n• Detects user roles\n• Reads DB models & schemas\n• Identifies API routes\n• Finds auth patterns"]
+        CREDS["🔑 OpenAI GPT-4o-mini\nGenerates realistic test\ncredentials per role\n(email + password)"]
     end
 
-    %% ── GENERATE SCENARIO ────────────────────────────────────────────────────
-    rect rgb(20, 40, 30)
-        Note over User,MongoDB: Phase 2 — Generate Scenario
-        User->>UI: Clicks "Generate New Scenario"<br/>Types scenario description + selects role
-        UI->>API: POST /api/generatesyntheticdata<br/>{ prompt, role, dbSchema, roleCredentials }
-        API->>OpenAI: Generate synthetic data matching schema<br/>with pre-assigned role credentials embedded
-        OpenAI-->>API: { syntheticData: { users:[...], bookings:[...], ... } }
-        API-->>UI: syntheticData
-        UI->>API: POST /api/scenarios<br/>{ projectId, scenario, role, userId, userPassword, syntheticData, isLive: false }
-        API->>MongoDB: Save Scenario
-        MongoDB-->>API: Scenario document
-        API-->>UI: Scenario (isLive: false)
-        UI-->>User: Shows scenario card — status Offline
+    subgraph SCENARIO["🎭  Step 2 — Define Scenario"]
+        direction TB
+        DESC["User describes scenario\ne.g. 'Admin approves a pending booking'"]
+        SYNTH["🧠 OpenAI GPT-4o-mini\nGenerates schema-accurate\nsynthetic data\n• Matches detected DB schema\n• Embeds generated credentials\n  into users table\n• Creates realistic related records"]
     end
 
-    %% ── LAUNCH SANDBOX ───────────────────────────────────────────────────────
-    rect rgb(40, 20, 30)
-        Note over User,SandboxApp: Phase 3 — Launch Sandbox
-        User->>UI: Clicks Offline toggle on scenario card
-        UI->>API: POST /api/launchSandbox<br/>{ repoUrl, syntheticData }
-        API->>EC2: POST http://ec2:8080/launch<br/>{ repoUrl, syntheticData }
-
-        EC2->>DockerNet: docker network create sandbox_network
-        DockerNet-->>EC2: Network ready
-
-        EC2->>SandboxMongo: docker run mongo:7<br/>--network sandbox_network<br/>-p 127.0.0.1:0:27017
-        SandboxMongo-->>EC2: Container started
-
-        EC2->>SandboxMongo: Poll mongosh ping until ready
-        SandboxMongo-->>EC2: Ready ✓
-
-        EC2->>SandboxMongo: Connect MongoClient → insertMany(syntheticData)
-        Note over EC2,SandboxMongo: Seeds users, bookings, etc.<br/>with exact test credentials from OpenAI
-
-        EC2->>EC2: git clone --depth=1 {repoUrl}
-        EC2->>EC2: Check for Dockerfile<br/>Auto-generate if missing<br/>(detects Node.js, npm scripts)
-        EC2->>EC2: docker build -t {image} {clonePath}
-
-        EC2->>SandboxApp: docker run --network sandbox_network<br/>-e MONGODB_URL=mongodb://sandbox_mongo/db<br/>-p {randomPort}:3000
-        SandboxApp-->>EC2: Container started
-
-        EC2-->>API: { status:"live", url:"http://18.x.x.x:4321" }
-        API->>MongoDB: PATCH Scenario → isLive: true, url
-        API-->>UI: Updated scenario
-        UI-->>User: Shows scenario card — status Live + clickable URL
+    subgraph STORE["🗄️  Platform Database (MongoDB on Railway)"]
+        direction LR
+        PROJ["Projects\n─────────\ngithubUrl\nroles\ndbSchema\nroleCredentials"]
+        SCEN["Scenarios\n─────────\nprojectId\nscenario\nrole\nuserId / userPassword\nsyntheticData\nisLive / url"]
     end
 
-    %% ── USE SANDBOX ──────────────────────────────────────────────────────────
-    rect rgb(30, 30, 20)
-        Note over User,SandboxApp: Phase 4 — Use Sandbox
-        User->>SandboxApp: Opens http://18.x.x.x:4321 in browser
-        Note over User,SandboxApp: Logs in with generated credentials<br/>(e.g. admin@bookings.com / Test@1234)<br/>All data is synthetic — no real APIs touched
-        SandboxApp->>SandboxMongo: Reads/writes synthetic data
-        SandboxMongo-->>SandboxApp: Returns seeded data
-        SandboxApp-->>User: Fully functional app environment
+    subgraph EC2["⚙️  Step 3 — Sandbox Engine (EC2)"]
+        direction TB
+        NET["Create isolated Docker network"]
+        MONGO["Spin up MongoDB container\n(per sandbox)"]
+        SEED["Seed MongoDB with\nsynthetic data"]
+        CLONE["git clone repo"]
+        DOCK["Auto-generate Dockerfile\nif missing"]
+        BUILD["docker build image"]
+        RUN["Launch app container\n+ inject MONGODB_URL"]
     end
+
+    subgraph SANDBOX["🌐  Live Sandbox"]
+        direction TB
+        URL["Public URL\nhttp://ec2-ip:port"]
+        LOGIN["QA / Demo User\nlogs in with generated\ncredentials"]
+        APP["Fully functional app\n✓ Real UI\n✓ Synthetic data\n✓ No prod APIs touched\n✓ Fully isolated"]
+    end
+
+    User -->|"Pastes GitHub URL"| GH
+    GH --> MCP
+    MCP -->|"Detected roles + schema"| CREDS
+    CREDS -->|"Saves project"| PROJ
+
+    PROJ -->|"User picks role\n+ describes scenario"| DESC
+    DESC --> SYNTH
+    SYNTH -->|"Saves scenario\n(isLive: false)"| SCEN
+
+    SCEN -->|"User clicks\n'Go Live'"| NET
+    NET --> MONGO
+    MONGO --> SEED
+    SEED --> CLONE
+    CLONE --> DOCK
+    DOCK --> BUILD
+    BUILD --> RUN
+
+    RUN -->|"Returns URL\nPatches scenario isLive: true"| SCEN
+    RUN --> URL
+    URL --> LOGIN
+    LOGIN --> APP
+
+    style ONBOARD fill:#0e1a2b,stroke:#2a4a7f,color:#7eb3ff
+    style SCENARIO fill:#0e2018,stroke:#2a7f4a,color:#7effa0
+    style STORE fill:#1a1a0e,stroke:#7f7f2a,color:#ffff7e
+    style EC2 fill:#2b0e1a,stroke:#7f2a4a,color:#ffb3d9
+    style SANDBOX fill:#1a2b0e,stroke:#4a7f2a,color:#c0ff7e
 ```
 
 ---
 
-## Component Responsibilities
-
-| Component | Host | Role |
-|---|---|---|
-| **Next.js Frontend** | Railway | UI — onboarding, scenario management, launch toggle |
-| **Express Backend** | Railway | API — projects, scenarios, OpenAI calls, proxy to EC2 |
-| **MongoDB** | Railway | Stores projects, scenarios, credentials, URLs |
-| **OpenAI GPT-4o-mini** | External | Generates role credentials + synthetic data |
-| **Sandbox Engine** | EC2 :8080 | Runs Docker operations — builds & starts isolated sandboxes |
-| **Sandbox MongoDB** | EC2 (Docker) | Per-sandbox isolated database, seeded with synthetic data |
-| **Sandbox App** | EC2 (Docker) | Cloned repo running as a container, exposed on a public port |
-
----
-
-## Data Flow Summary
+## The Vision
 
 ```
-User describes scenario
-        ↓
-OpenAI generates realistic synthetic data
-(with pre-assigned test credentials embedded in users table)
-        ↓
-EC2 spins up isolated MongoDB + clones repo + builds Docker image
-        ↓
-Synthetic data seeded into isolated MongoDB
-        ↓
-App container starts, connected to its own MongoDB via Docker network
-        ↓
-Public URL returned → QA/demo can log in with known credentials
+GitHub URL
+    │
+    ▼
+🤖 MCP Agent reads the repo
+    ├── Scans models/ → detects DB schema (users, bookings, products…)
+    ├── Scans routes/ → detects roles (admin, user, support…)
+    └── Reads auth logic → understands login flow
+    │
+    ▼
+OpenAI generates test credentials per role
+(admin@app.com / Pass@123, user@app.com / Test@456)
+    │
+    ▼
+QA team writes scenario in plain English
+"An admin reviews and approves a flagged booking"
+    │
+    ▼
+OpenAI generates synthetic data matching exact schema
+with those credentials already embedded in the users table
+    │
+    ▼
+EC2 Sandbox Engine:
+  1. Spins up isolated MongoDB
+  2. Seeds it with synthetic data
+  3. Clones the repo
+  4. Builds a Docker image
+  5. Starts the app connected to that MongoDB
+  6. Returns a public URL
+    │
+    ▼
+QA / Demo user opens URL → logs in → tests the exact scenario
+No real data. No real APIs. Fully isolated. Destroyed when done.
 ```
-
----
-
-## Key Design Decisions
-
-- **Isolation**: Every sandbox gets its own MongoDB container and app container — no shared state between scenarios
-- **No real data**: Synthetic data is AI-generated, matching exact schema, with realistic values
-- **Role credentials**: OpenAI generates test email+password per role at onboarding time, embedded into synthetic data so login always works
-- **Auto Dockerfile**: If the repo has no Dockerfile (or an empty one), the engine detects `package.json` and auto-generates one
-- **Port range**: Sandbox containers map to ports 3001–4999 on EC2, covered by the AWS security group rule
