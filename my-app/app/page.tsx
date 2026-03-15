@@ -1,5 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const API = "http://localhost:4000/api";
+
+type Project = {
+  id: string;
+  scenario: string;
+  githubUrl: string;
+  syntheticData: Record<string, unknown>;
+  role: string;
+  userId: string;
+  userPassword: string;
+  isLive: boolean;
+};
 
 const YELLOW = "#e8d84b";
 const YELLOW_DIM = "#e8d84b22";
@@ -10,12 +23,6 @@ const CARD = "#181818";
 const BORDER = "#252525";
 const MUTED = "#555";
 const SUBTLE = "#888";
-
-const mockVersions = [
-  { scenario: "Housing Service v2", user: "alice@acme.com", url: "https://housing-v2.mirrored.dev", syntheticData: "Tenants, Listings, Leases", syntheticApis: "Stripe, SendGrid" },
-  { scenario: "Rewards MVP", user: "bob@acme.com", url: "https://rewards-mvp.mirrored.dev", syntheticData: "Users, Points, Redemptions", syntheticApis: "Twilio, Mailchimp" },
-  { scenario: "Careers Staging", user: "carol@acme.com", url: "https://careers-staging.mirrored.dev", syntheticData: "Jobs, Applicants, Interviews", syntheticApis: "LinkedIn, Greenhouse" },
-];
 
 const projects = ["Housing Service", "Rewards Service", "Careers Service", "Document Vault", "Offers"];
 
@@ -131,6 +138,43 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
   const [githubUrl, setGithubUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedData, setExpandedData] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API}/projects`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) { setProjects(data); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    await fetch(`${API}/projects/${id}`, { method: "DELETE" });
+    setProjects(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleToggleLive = async (p: Project) => {
+    const updated = await fetch(`${API}/projects/${p.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isLive: !p.isLive }),
+    }).then(r => r.json());
+    setProjects(prev => prev.map(x => x.id === p.id ? updated : x));
+  };
+
+  const handleSubmitRepo = async () => {
+    if (!githubUrl.trim()) return;
+    const created = await fetch(`${API}/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scenario: "New Scenario", githubUrl, syntheticData: {}, role: "user", userId: "", userPassword: "", isLive: false }),
+    }).then(r => r.json());
+    setProjects(prev => [...prev, created]);
+    setSubmitted(true);
+  };
 
   return (
     <div
@@ -159,14 +203,7 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* GitHub input card */}
-      <div
-        className="rounded-2xl p-6"
-        style={{
-          backgroundColor: CARD,
-          border: `1px solid ${BORDER}`,
-          boxShadow: `0 0 30px ${YELLOW_DIM}`,
-        }}
-      >
+      <div className="rounded-2xl p-6" style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, boxShadow: `0 0 30px ${YELLOW_DIM}` }}>
         <label className="block text-xs font-bold uppercase tracking-widest mb-4" style={{ color: MUTED }}>
           GitHub Repository URL
         </label>
@@ -181,26 +218,18 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
               type="url"
               placeholder="https://github.com/your-org/your-repo"
               value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
+              onChange={e => setGithubUrl(e.target.value)}
               className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-all"
               style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}`, color: "#fff" }}
-              onFocus={e => {
-                e.currentTarget.style.borderColor = YELLOW;
-                e.currentTarget.style.boxShadow = `0 0 0 3px ${YELLOW_DIM}`;
-              }}
-              onBlur={e => {
-                e.currentTarget.style.borderColor = BORDER;
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              onFocus={e => { e.currentTarget.style.borderColor = YELLOW; e.currentTarget.style.boxShadow = `0 0 0 3px ${YELLOW_DIM}`; }}
+              onBlur={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.boxShadow = "none"; }}
             />
           </div>
           <button
-            onClick={() => setSubmitted(true)}
+            onClick={handleSubmitRepo}
             disabled={!githubUrl.trim()}
             className="rounded-xl px-6 py-3 text-sm font-black transition-all disabled:opacity-25 disabled:cursor-not-allowed"
             style={{ backgroundColor: YELLOW, color: "#000" }}
-            onMouseEnter={e => !githubUrl.trim() || (e.currentTarget.style.filter = "brightness(1.1)")}
-            onMouseLeave={e => (e.currentTarget.style.filter = "none")}
           >
             Submit
           </button>
@@ -237,82 +266,102 @@ function NewApplicationView({ onBack }: { onBack: () => void }) {
         </button>
       </div>
 
-      {/* Past Versions */}
+      {/* Projects list */}
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between pb-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Past Versions</p>
-          <span
-            className="rounded-full px-3 py-0.5 text-xs font-semibold"
-            style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}`, color: SUBTLE }}
-          >
-            {mockVersions.length} environments
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Environments</p>
+          <span className="rounded-full px-3 py-0.5 text-xs font-semibold" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}`, color: SUBTLE }}>
+            {projects.length} total
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          {mockVersions.map((v, i) => (
-            <div
-              key={i}
-              className="flex flex-col rounded-2xl overflow-hidden transition-all"
-              style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = YELLOW_BORDER;
-                e.currentTarget.style.boxShadow = `0 0 20px ${YELLOW_DIM}`;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = BORDER;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              {/* Card header */}
+        {loading ? (
+          <p className="text-sm" style={{ color: MUTED }}>Loading...</p>
+        ) : projects.length === 0 ? (
+          <p className="text-sm" style={{ color: MUTED }}>No environments yet. Submit a repo above.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {projects.map((p) => (
               <div
-                className="flex items-center justify-between px-4 py-3"
-                style={{ backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}
+                key={p.id}
+                className="flex flex-col rounded-2xl overflow-hidden transition-all"
+                style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = YELLOW_BORDER; e.currentTarget.style.boxShadow = `0 0 20px ${YELLOW_DIM}`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.boxShadow = "none"; }}
               >
-                <span className="text-xs font-black uppercase tracking-widest" style={{ color: MUTED }}>v{i + 1}</span>
-                <span
-                  className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide"
-                  style={{ backgroundColor: "#00d4aa18", color: "#00d4aa" }}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#00d4aa]" />
-                  Live
-                </span>
-              </div>
+                {/* Card header */}
+                <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
+                  {/* Live toggle */}
+                  <button
+                    onClick={() => handleToggleLive(p)}
+                    className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide transition-all"
+                    style={p.isLive
+                      ? { backgroundColor: "#00d4aa18", color: "#00d4aa" }
+                      : { backgroundColor: "#ffffff10", color: MUTED }
+                    }
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.isLive ? "#00d4aa" : MUTED }} />
+                    {p.isLive ? "Live" : "Offline"}
+                  </button>
+                  {/* Delete */}
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="flex items-center justify-center h-6 w-6 rounded-lg transition-colors"
+                    style={{ color: MUTED }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+                    title="Delete"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                    </svg>
+                  </button>
+                </div>
 
-              {/* Fields */}
-              {[
-                { label: "Scenario", value: v.scenario, bold: true },
-                { label: "User", value: v.user },
-                { label: "URL", value: v.url, link: true },
-                { label: "Synthetic Data", value: v.syntheticData },
-                { label: "Ext. APIs", value: v.syntheticApis },
-              ].map(({ label, value, bold, link }, fi) => (
-                <div
-                  key={label}
-                  className="px-4 py-3"
-                  style={{ borderBottom: fi < 4 ? `1px solid ${BORDER}` : "none" }}
-                >
-                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: MUTED }}>{label}</p>
-                  {link ? (
-                    <a
-                      href={value}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="truncate block text-xs font-medium transition-opacity hover:opacity-70"
-                      style={{ color: YELLOW }}
+                {/* Fields */}
+                {[
+                  { label: "Scenario", value: p.scenario, bold: true },
+                  { label: "GitHub URL", value: p.githubUrl, link: true },
+                  { label: "Role", value: p.role },
+                  { label: "User ID", value: p.userId },
+                  { label: "Password", value: p.userPassword, password: true },
+                ].map(({ label, value, bold, link, password }, fi) => (
+                  <div key={label} className="px-4 py-2.5" style={{ borderBottom: fi < 4 ? `1px solid ${BORDER}` : "none" }}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: MUTED }}>{label}</p>
+                    {link ? (
+                      <a href={value} target="_blank" rel="noopener noreferrer" className="truncate block text-xs font-medium transition-opacity hover:opacity-70" style={{ color: YELLOW }}>{value || "—"}</a>
+                    ) : password ? (
+                      <p className="text-xs font-mono tracking-widest" style={{ color: SUBTLE }}>{value ? "••••••••••" : "—"}</p>
+                    ) : (
+                      <p className="text-xs" style={{ color: bold ? "#fff" : SUBTLE, fontWeight: bold ? 700 : 400 }}>{value || "—"}</p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Synthetic Data toggle */}
+                <div className="px-4 py-2.5">
+                  <button
+                    onClick={() => setExpandedData(expandedData === p.id ? null : p.id)}
+                    className="flex items-center justify-between w-full text-left"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>Synthetic Data</p>
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transform: expandedData === p.id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
                     >
-                      {value}
-                    </a>
-                  ) : (
-                    <p className="text-xs" style={{ color: bold ? "#fff" : SUBTLE, fontWeight: bold ? 700 : 400 }}>
-                      {value}
-                    </p>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {expandedData === p.id && (
+                    <pre className="mt-2 text-[10px] leading-relaxed overflow-auto rounded-lg p-2 max-h-36" style={{ backgroundColor: SURFACE, color: SUBTLE }}>
+                      {JSON.stringify(p.syntheticData, null, 2)}
+                    </pre>
                   )}
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
