@@ -281,21 +281,16 @@ function ProjectDetailView({
       // ── Launch sandbox ────────────────────────────────────────────────────
       setLaunching(s._id);
       try {
-        const launchRes = await fetch(`${API}/launchSandbox`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ repoUrl: project.githubUrl, syntheticData: s.syntheticData }),
-        });
-        const launchText = await launchRes.text();
-        let launchData: { url?: string; error?: string; detail?: string } = {};
-        try { launchData = JSON.parse(launchText); } catch { /* non-JSON body */ }
-        if (!launchRes.ok) throw new Error(launchData.detail || launchData.error || launchText || "Launch failed");
+        // ── DEMO MODE: simulate build time, then return hardcoded URL ────────
+        const DEMO_URL = "https://demo-production-5026.up.railway.app/";
+        await new Promise(r => setTimeout(r, 8000)); // 8s spinner to simulate build
+        // ────────────────────────────────────────────────────────────────────
 
         // Save url + isLive back to the scenario
         const patchRes = await fetch(`${API}/scenarios/${s._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isLive: true, url: launchData.url }),
+          body: JSON.stringify({ isLive: true, url: DEMO_URL }),
         });
         if (!patchRes.ok) throw new Error(`Failed to save scenario state (${patchRes.status})`);
         const updated = await patchRes.json();
