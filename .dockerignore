@@ -1,0 +1,9 @@
+node_modules
+server/node_modules
+my-app/node_modules
+my-app/.next
+.git
+.github
+*.md
+docker-compose*.yml
+start.sh

@@ -4,10 +4,14 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 const DATA_FILE = path.join(__dirname, "data", "projects.json");
 
-app.use(cors({ origin: "http://localhost:3000" }));
+// MongoDB URL available for future use
+const MONGODB_URL = process.env.MONGODB_URL || "mongodb://localhost:27017/mirrorinseconds";
+console.log(`MongoDB URL configured: ${MONGODB_URL} (not connected yet — using JSON store)`);
+
+app.use(cors());
 app.use(express.json());
 
 const readProjects = () => JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
@@ -63,4 +67,7 @@ app.delete("/api/projects/:id", (req, res) => {
   res.json(deleted);
 });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Health check
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
