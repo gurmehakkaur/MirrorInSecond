@@ -5,15 +5,40 @@
     "githubUrl": "https://github.com/acme/housing-service",
     "syntheticData": {
       "tenants": [
-        { "name": "John Smith", "unit": "4B", "rent": 2400, "status": "active" },
-        { "name": "Sara Lee", "unit": "7A", "rent": 1950, "status": "pending" }
+        {
+          "name": "John Smith",
+          "unit": "4B",
+          "rent": 2400,
+          "status": "active"
+        },
+        {
+          "name": "Sara Lee",
+          "unit": "7A",
+          "rent": 1950,
+          "status": "pending"
+        }
       ],
       "listings": [
-        { "id": "L001", "address": "12 Oak St", "price": 320000, "available": true },
-        { "id": "L002", "address": "88 Maple Ave", "price": 415000, "available": false }
+        {
+          "id": "L001",
+          "address": "12 Oak St",
+          "price": 320000,
+          "available": true
+        },
+        {
+          "id": "L002",
+          "address": "88 Maple Ave",
+          "price": 415000,
+          "available": false
+        }
       ],
       "leases": [
-        { "leaseId": "LS001", "tenant": "John Smith", "start": "2024-01-01", "end": "2025-01-01" }
+        {
+          "leaseId": "LS001",
+          "tenant": "John Smith",
+          "start": "2024-01-01",
+          "end": "2025-01-01"
+        }
       ]
     },
     "role": "admin",
@@ -27,11 +52,24 @@
     "githubUrl": "https://github.com/acme/rewards-service",
     "syntheticData": {
       "users": [
-        { "name": "Bob Chen", "points": 4500, "tier": "gold" },
-        { "name": "Maya Patel", "points": 1200, "tier": "silver" }
+        {
+          "name": "Bob Chen",
+          "points": 4500,
+          "tier": "gold"
+        },
+        {
+          "name": "Maya Patel",
+          "points": 1200,
+          "tier": "silver"
+        }
       ],
       "redemptions": [
-        { "id": "R001", "user": "Bob Chen", "item": "Gift Card $50", "pointsCost": 2000 }
+        {
+          "id": "R001",
+          "user": "Bob Chen",
+          "item": "Gift Card $50",
+          "pointsCost": 2000
+        }
       ]
     },
     "role": "user",
@@ -45,19 +83,45 @@
     "githubUrl": "https://github.com/acme/careers-service",
     "syntheticData": {
       "jobs": [
-        { "title": "Senior Engineer", "department": "Platform", "open": true },
-        { "title": "Product Designer", "department": "Design", "open": true }
+        {
+          "title": "Senior Engineer",
+          "department": "Platform",
+          "open": true
+        },
+        {
+          "title": "Product Designer",
+          "department": "Design",
+          "open": true
+        }
       ],
       "applicants": [
-        { "name": "Carol White", "role": "Senior Engineer", "status": "interview" }
+        {
+          "name": "Carol White",
+          "role": "Senior Engineer",
+          "status": "interview"
+        }
       ],
       "interviews": [
-        { "applicant": "Carol White", "date": "2025-04-10", "interviewer": "Dan Torres" }
+        {
+          "applicant": "Carol White",
+          "date": "2025-04-10",
+          "interviewer": "Dan Torres"
+        }
       ]
     },
     "role": "reviewer",
     "userId": "carol@acme.com",
     "userPassword": "synth_pass_carol_03",
+    "isLive": false
+  },
+  {
+    "id": "1773551579148",
+    "scenario": "New Scenario",
+    "githubUrl": "https://demo-production-d526.up.railway.app/",
+    "syntheticData": {},
+    "role": "user",
+    "userId": "",
+    "userPassword": "",
     "isLive": false
   }
 ]
