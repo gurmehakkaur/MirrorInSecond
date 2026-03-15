@@ -262,6 +262,8 @@ function ProjectDetailView({
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [expandedData, setExpandedData] = useState<string | null>(null);
+  const [launching, setLaunching] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<{ id: string; msg: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,12 +275,42 @@ function ProjectDetailView({
   }, [project._id]);
 
   const handleToggleLive = async (s: Scenario) => {
-    const updated = await fetch(`${API}/scenarios/${s._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isLive: !s.isLive }),
-    }).then(r => r.json());
-    setScenarios(prev => prev.map(x => x._id === s._id ? updated : x));
+    setLaunchError(null);
+
+    if (!s.isLive) {
+      // ── Launch sandbox ────────────────────────────────────────────────────
+      setLaunching(s._id);
+      try {
+        const launchRes = await fetch(`${API}/launchSandbox`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ repoUrl: project.githubUrl, syntheticData: s.syntheticData }),
+        });
+        const launchData = await launchRes.json();
+        if (!launchRes.ok) throw new Error(launchData.detail || launchData.error || "Launch failed");
+
+        // Save url + isLive back to the scenario
+        const updated = await fetch(`${API}/scenarios/${s._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isLive: true, url: launchData.url }),
+        }).then(r => r.json());
+
+        setScenarios(prev => prev.map(x => x._id === s._id ? updated : x));
+      } catch (err: unknown) {
+        setLaunchError({ id: s._id, msg: err instanceof Error ? err.message : "Launch failed" });
+      } finally {
+        setLaunching(null);
+      }
+    } else {
+      // ── Take offline ──────────────────────────────────────────────────────
+      const updated = await fetch(`${API}/scenarios/${s._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isLive: false }),
+      }).then(r => r.json());
+      setScenarios(prev => prev.map(x => x._id === s._id ? updated : x));
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -397,15 +429,29 @@ function ProjectDetailView({
                 <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
                   <button
                     onClick={() => handleToggleLive(s)}
-                    className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide transition-all"
+                    disabled={launching === s._id}
+                    className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     style={s.isLive
                       ? { backgroundColor: "#00d4aa18", color: "#00d4aa" }
-                      : { backgroundColor: "#ffffff10", color: MUTED }
+                      : launching === s._id
+                        ? { backgroundColor: YELLOW_DIM, color: YELLOW }
+                        : { backgroundColor: "#ffffff10", color: MUTED }
                     }
-                    title={s.isLive ? "Click to take offline" : "Click to spin up"}
+                    title={s.isLive ? "Click to take offline" : "Click to launch sandbox"}
                   >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.isLive ? "#00d4aa" : MUTED }} />
-                    {s.isLive ? "Live" : "Offline"}
+                    {launching === s._id ? (
+                      <>
+                        <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        Launching…
+                      </>
+                    ) : (
+                      <>
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.isLive ? "#00d4aa" : MUTED }} />
+                        {s.isLive ? "Live" : "Offline"}
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => handleDelete(s._id)}
@@ -456,6 +502,15 @@ function ProjectDetailView({
                   <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: MUTED }}>Password</p>
                   <p className="text-xs font-mono tracking-widest" style={{ color: SUBTLE }}>{s.userPassword ? "••••••••••" : "—"}</p>
                 </div>
+
+                {/* Launch error */}
+                {launchError?.id === s._id && (
+                  <div className="px-4 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+                    <p className="text-[10px] font-semibold" style={{ color: "#ef4444" }}>
+                      Launch failed: {launchError.msg}
+                    </p>
+                  </div>
+                )}
 
                 {/* Synthetic Data toggle */}
                 <div className="px-4 py-2.5">

@@ -6,6 +6,7 @@ const OpenAI = require("openai");
 const Project = require("./models/Project");
 const Scenario = require("./models/Scenario");
 const generateSyntheticData = require("./routes/generateSyntheticData");
+const launchSandbox         = require("./routes/launchSandbox");
 
 async function generateRoleCredentials(roles, githubUrl) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -143,6 +144,7 @@ app.delete("/api/scenarios/:id", async (req, res) => {
 // ── Other Routes ──────────────────────────────────────────────────────────────
 
 app.use("/api/generatesyntheticdata", generateSyntheticData);
+app.use("/api/launchSandbox",         launchSandbox);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
