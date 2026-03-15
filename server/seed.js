@@ -15,101 +15,126 @@ async function seed() {
     return;
   }
 
-  // Create projects
-  const [housing, rewards, careers] = await Project.insertMany([
+  // ── Demo project (seed only) ─────────────────────────────────────────────
+  // NOTE: This project and its scenarios are for demonstration purposes only.
+  // They are pre-populated to show what MirrorInSeconds looks like in action.
+
+  const [demo] = await Project.insertMany([
     {
-      githubUrl: "https://github.com/acme/housing-service",
-      roles: ["admin", "tenant", "reviewer"],
+      githubUrl: "https://github.com/acme/bookings-service",
+      roles: ["admin", "customer", "support"],
       dbSchema: {
-        tenants:  ["id", "name", "unit", "rent", "status"],
-        listings: ["id", "address", "price", "available"],
-        leases:   ["leaseId", "tenantId", "start", "end"],
+        users:    ["id", "email", "password", "role", "name"],
+        bookings: ["id", "userId", "serviceId", "date", "status"],
+        services: ["id", "name", "duration", "price", "available"],
+        payments: ["id", "bookingId", "amount", "status", "paidAt"],
       },
-    },
-    {
-      githubUrl: "https://github.com/acme/rewards-service",
-      roles: ["user", "admin"],
-      dbSchema: {
-        users:       ["id", "name", "email", "points", "tier"],
-        redemptions: ["id", "userId", "item", "pointsCost", "createdAt"],
-      },
-    },
-    {
-      githubUrl: "https://github.com/acme/careers-service",
-      roles: ["reviewer", "candidate", "hiring_manager"],
-      dbSchema: {
-        jobs:       ["id", "title", "department", "open"],
-        applicants: ["id", "name", "jobId", "status"],
-        interviews: ["id", "applicantId", "date", "interviewer"],
+      roleCredentials: {
+        admin:    { email: "admin@acme-demo.com",    password: "Demo@Admin2024"    },
+        customer: { email: "customer@acme-demo.com", password: "Demo@Customer2024" },
+        support:  { email: "support@acme-demo.com",  password: "Demo@Support2024"  },
       },
     },
   ]);
 
-  console.log(`Seeded ${3} projects.`);
+  console.log("Seeded 1 demo project.");
 
-  // Create scenarios
   await Scenario.insertMany([
     {
-      projectId: housing._id,
-      scenario: "Admin approves pending housing application",
+      projectId: demo._id,
+      scenario: "Admin views all pending bookings",
       role: "admin",
-      userId: "alice@acme.com",
-      userPassword: "synth_pass_alice_01",
-      syntheticData: {
-        tenants: [
-          { name: "John Smith", unit: "4B", rent: 2400, status: "active" },
-          { name: "Sara Lee",   unit: "7A", rent: 1950, status: "pending" },
-        ],
-        listings: [
-          { id: "L001", address: "12 Oak St",    price: 320000, available: true },
-          { id: "L002", address: "88 Maple Ave", price: 415000, available: false },
-        ],
-        leases: [
-          { leaseId: "LS001", tenant: "John Smith", start: "2024-01-01", end: "2025-01-01" },
-        ],
-      },
-      isLive: true,
-    },
-    {
-      projectId: rewards._id,
-      scenario: "User redeems points for gift card",
-      role: "user",
-      userId: "bob@acme.com",
-      userPassword: "synth_pass_bob_02",
+      userId: "admin@acme-demo.com",
+      userPassword: "Demo@Admin2024",
       syntheticData: {
         users: [
-          { name: "Bob Chen",   points: 4500, tier: "gold" },
-          { name: "Maya Patel", points: 1200, tier: "silver" },
+          { id: "u1", email: "admin@acme-demo.com", password: "Demo@Admin2024", role: "admin", name: "Alex Admin" },
+          { id: "u2", email: "jane@example.com",    password: "pass123",        role: "customer", name: "Jane Doe" },
+          { id: "u3", email: "tom@example.com",     password: "pass456",        role: "customer", name: "Tom Brooks" },
         ],
-        redemptions: [
-          { id: "R001", user: "Bob Chen", item: "Gift Card $50", pointsCost: 2000 },
+        bookings: [
+          { id: "b1", userId: "u2", serviceId: "s1", date: "2025-08-10", status: "pending" },
+          { id: "b2", userId: "u3", serviceId: "s2", date: "2025-08-12", status: "pending" },
+          { id: "b3", userId: "u2", serviceId: "s3", date: "2025-08-15", status: "confirmed" },
+        ],
+        services: [
+          { id: "s1", name: "Deep Tissue Massage", duration: 60, price: 90,  available: true },
+          { id: "s2", name: "Hair Cut & Style",    duration: 45, price: 55,  available: true },
+          { id: "s3", name: "Facial Treatment",    duration: 75, price: 110, available: true },
+        ],
+        payments: [
+          { id: "p1", bookingId: "b3", amount: 110, status: "paid", paidAt: "2025-08-01" },
         ],
       },
-      isLive: true,
+      isLive: false,
     },
     {
-      projectId: careers._id,
-      scenario: "Reviewer screens senior engineer applicant",
-      role: "reviewer",
-      userId: "carol@acme.com",
-      userPassword: "synth_pass_carol_03",
+      projectId: demo._id,
+      scenario: "Customer books an available service",
+      role: "customer",
+      userId: "customer@acme-demo.com",
+      userPassword: "Demo@Customer2024",
       syntheticData: {
-        jobs: [
-          { title: "Senior Engineer",  department: "Platform", open: true },
-          { title: "Product Designer", department: "Design",   open: true },
+        users: [
+          { id: "u1", email: "customer@acme-demo.com", password: "Demo@Customer2024", role: "customer", name: "Chris Customer" },
         ],
-        applicants: [
-          { name: "Carol White", role: "Senior Engineer", status: "interview" },
+        bookings: [],
+        services: [
+          { id: "s1", name: "Deep Tissue Massage", duration: 60, price: 90,  available: true },
+          { id: "s2", name: "Hair Cut & Style",    duration: 45, price: 55,  available: true },
         ],
-        interviews: [
-          { applicant: "Carol White", date: "2025-04-10", interviewer: "Dan Torres" },
+        payments: [],
+      },
+      isLive: false,
+    },
+    {
+      projectId: demo._id,
+      scenario: "Support resolves a disputed payment",
+      role: "support",
+      userId: "support@acme-demo.com",
+      userPassword: "Demo@Support2024",
+      syntheticData: {
+        users: [
+          { id: "u1", email: "support@acme-demo.com", password: "Demo@Support2024", role: "support", name: "Sam Support" },
+          { id: "u2", email: "angry@example.com",     password: "pass789",          role: "customer", name: "Rita Furious" },
+        ],
+        bookings: [
+          { id: "b1", userId: "u2", serviceId: "s1", date: "2025-07-20", status: "completed" },
+        ],
+        services: [
+          { id: "s1", name: "Sports Massage", duration: 60, price: 85, available: true },
+        ],
+        payments: [
+          { id: "p1", bookingId: "b1", amount: 85, status: "disputed", paidAt: "2025-07-20" },
+        ],
+      },
+      isLive: false,
+    },
+    {
+      projectId: demo._id,
+      scenario: "Customer cancels an upcoming booking",
+      role: "customer",
+      userId: "customer@acme-demo.com",
+      userPassword: "Demo@Customer2024",
+      syntheticData: {
+        users: [
+          { id: "u1", email: "customer@acme-demo.com", password: "Demo@Customer2024", role: "customer", name: "Chris Customer" },
+        ],
+        bookings: [
+          { id: "b1", userId: "u1", serviceId: "s1", date: "2025-09-05", status: "confirmed" },
+        ],
+        services: [
+          { id: "s1", name: "Yoga Session", duration: 50, price: 40, available: true },
+        ],
+        payments: [
+          { id: "p1", bookingId: "b1", amount: 40, status: "paid", paidAt: "2025-08-20" },
         ],
       },
       isLive: false,
     },
   ]);
 
-  console.log(`Seeded 3 scenarios.`);
+  console.log("Seeded 4 demo scenarios.");
   await mongoose.disconnect();
 }
 

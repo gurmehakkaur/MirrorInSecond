@@ -83,7 +83,7 @@ function ScenarioModal({
   const [selectedRole, setSelectedRole] = useState(project.roles[0] || "user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const MAX = 50;
+  const MAX = 150;
 
   const handleGenerate = async () => {
     if (!prompt.trim() || prompt.length > MAX) return;
@@ -112,10 +112,10 @@ function ScenarioModal({
           projectId: project._id,
           scenario: prompt.trim(),
           role: selectedRole,
-          userId: "",
-          userPassword: "",
+          userId: project.roleCredentials?.[selectedRole]?.email || "",
+          userPassword: project.roleCredentials?.[selectedRole]?.password || "",
           syntheticData: genData.syntheticData,
-          isLive: true,
+          isLive: false,
         }),
       });
       const scenData = await scenRes.json();
