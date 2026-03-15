@@ -480,10 +480,10 @@ function ProjectDetailView({
                 {/* URL */}
                 <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${BORDER}` }}>
                   <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: MUTED }}>Hosted URL</p>
-                  {s.url ? (
+                  {s.isLive && s.url ? (
                     <a href={s.url} target="_blank" rel="noopener noreferrer" className="truncate block text-xs font-medium transition-opacity hover:opacity-70" style={{ color: YELLOW }}>{s.url}</a>
                   ) : (
-                    <p className="text-xs" style={{ color: MUTED }}>Not deployed yet</p>
+                    <p className="text-xs" style={{ color: MUTED }}>{s.url ? "Offline" : "Not deployed yet"}</p>
                   )}
                 </div>
 

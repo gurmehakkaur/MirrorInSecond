@@ -236,6 +236,18 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 
+  // ── DEMO MODE — temporary override ────────────────────────────────────────
+  // Remove DEMO_MODE from .env to re-enable real Docker sandbox launching.
+  if (process.env.DEMO_MODE === "true") {
+    const demoUrl   = process.env.DEMO_URL || "https://demo-production-5026.up.railway.app/";
+    const delayMs   = parseInt(process.env.DEMO_DELAY_MS || "304000", 10);
+    console.log(`[launch] DEMO MODE — waiting ${delayMs / 1000}s then returning ${demoUrl}`);
+    await sleep(delayMs);
+    console.log(`[launch] DEMO MODE — returning ${demoUrl}`);
+    return res.json({ status: "live", sandboxId: `demo_${Date.now()}`, url: demoUrl });
+  }
+  // ── END DEMO MODE ──────────────────────────────────────────────────────────
+
   const meta         = buildMeta(repoUrl.trim());
   const PUBLIC_HOST  = process.env.EC2_PUBLIC_IP || "localhost";
 
