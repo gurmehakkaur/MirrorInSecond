@@ -3,11 +3,14 @@ import { useState, useEffect } from "react";
 
 const API = "/api";
 
+type RoleCred = { email: string; password: string };
+
 type Project = {
   _id: string;
   githubUrl: string;
   roles: string[];
   dbSchema: Record<string, string[]>;
+  roleCredentials: Record<string, RoleCred>;
 };
 
 type Scenario = {
@@ -91,7 +94,12 @@ function ScenarioModal({
       const genRes = await fetch(`${API}/generatesyntheticdata`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), role: selectedRole, dbSchema: project.dbSchema }),
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          role: selectedRole,
+          dbSchema: project.dbSchema,
+          roleCredentials: project.roleCredentials || {},
+        }),
       });
       const genData = await genRes.json();
       if (!genRes.ok) throw new Error(genData.error || "Generation failed");
@@ -312,6 +320,23 @@ function ProjectDetailView({
             {project.roles.map(r => <Chip key={r} label={r} />)}
             <Chip label={`${tableCount} table${tableCount !== 1 ? "s" : ""}`} dim />
           </div>
+
+          {/* Role credentials */}
+          {project.roleCredentials && Object.keys(project.roleCredentials).length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {Object.entries(project.roleCredentials).map(([role, cred]) => (
+                <div
+                  key={role}
+                  className="flex flex-col gap-0.5 rounded-xl px-3 py-2.5"
+                  style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: YELLOW }}>{role}</span>
+                  <span className="text-xs font-mono" style={{ color: SUBTLE }}>{cred.email}</span>
+                  <span className="text-xs font-mono" style={{ color: MUTED }}>{cred.password}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -796,6 +821,22 @@ function NewApplicationView({
                       {tables.length > 0 ? tables.join(", ") : "—"}
                     </p>
                   </div>
+
+                  {/* Role Credentials */}
+                  {p.roleCredentials && Object.keys(p.roleCredentials).length > 0 && (
+                    <div className="px-4 py-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>Test Credentials</p>
+                      <div className="flex flex-col gap-1.5">
+                        {Object.entries(p.roleCredentials).map(([role, cred]) => (
+                          <div key={role} className="rounded-lg px-2.5 py-2" style={{ backgroundColor: SURFACE }}>
+                            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: YELLOW }}>{role}</span>
+                            <p className="text-[10px] mt-0.5 font-mono" style={{ color: SUBTLE }}>{cred.email}</p>
+                            <p className="text-[10px] font-mono" style={{ color: MUTED }}>{cred.password}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* CTA */}
                   <div className="px-4 py-3 mt-auto" style={{ borderTop: `1px solid ${BORDER}` }}>

@@ -2,9 +2,33 @@ require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const OpenAI = require("openai");
 const Project = require("./models/Project");
 const Scenario = require("./models/Scenario");
 const generateSyntheticData = require("./routes/generateSyntheticData");
+
+async function generateRoleCredentials(roles, githubUrl) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || !roles.length) return {};
+  const repoName = githubUrl.split("/").pop() || "app";
+  const openai = new OpenAI({ apiKey });
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: "You generate realistic test credentials for QA environments. Return ONLY valid JSON, no explanation, no markdown.",
+      },
+      {
+        role: "user",
+        content: `Generate a test email and password for each role in the app "${repoName}".\nRoles: ${roles.join(", ")}\nReturn JSON: { "roleName": { "email": "...", "password": "..." } }`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.7,
+  });
+  return JSON.parse(completion.choices[0].message.content);
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -33,11 +57,23 @@ app.get("/api/projects/:id", async (req, res) => {
 });
 
 app.post("/api/projects", async (req, res) => {
+  const roles    = req.body.roles    || ["user"];
+  const githubUrl = req.body.githubUrl || "";
+
   const project = await Project.create({
-    githubUrl: req.body.githubUrl || "",
-    roles:     req.body.roles     || ["user"],
-    dbSchema:  req.body.dbSchema  || {},
+    githubUrl,
+    roles,
+    dbSchema: req.body.dbSchema || {},
   });
+
+  try {
+    const roleCredentials = await generateRoleCredentials(roles, githubUrl);
+    project.roleCredentials = roleCredentials;
+    await project.save();
+  } catch (err) {
+    console.error("Credential generation failed:", err.message);
+  }
+
   res.status(201).json(project);
 });
 

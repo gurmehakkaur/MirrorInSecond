@@ -4,16 +4,20 @@ const OpenAI = require("openai");
 const router = express.Router();
 
 const SYSTEM_PROMPT = `You are a synthetic data generator for software testing environments.
-Given a database schema, a user role, and a short scenario description, generate realistic synthetic test data that:
+Given a database schema, a user role, a short scenario description, and pre-assigned test credentials, generate realistic synthetic test data that:
 - Matches the exact structure and field names of the provided schema
 - Is appropriate for the given user role (e.g. admin sees more data, user sees their own records only)
 - Reflects the scenario described by the user
-- Uses plausible fake names, emails, numbers, and dates — never real personal data
+- Inserts the provided test credentials into the appropriate users/accounts table rows — do not invent different emails or passwords
+- Uses plausible fake names, emails, numbers, and dates for all other records — never real personal data
 - Returns ONLY a valid JSON object with no explanation, no markdown, no code fences
-
+- Make sure to add required credentials into the user ir equivalent table so user can login.
+Example: I am a student wanting to enrol in a webinar but the seats are full, in this case it is your responsiblity that:
+1. Student credentials can log in to the scenario and see student view.
+2. A webinar should be present in the webinar table with a date in the future and a capacity of 0 (full).`;
 
 router.post("/", async (req, res) => {
-  const { prompt, role, dbSchema } = req.body;
+  const { prompt, role, dbSchema, roleCredentials } = req.body;
 
   if (!prompt || !role || !dbSchema) {
     return res.status(400).json({ error: "prompt, role, and dbSchema are required" });
@@ -30,11 +34,19 @@ router.post("/", async (req, res) => {
 
   const openai = new OpenAI({ apiKey });
 
+  const credentialsSection = roleCredentials && Object.keys(roleCredentials).length > 0
+    ? `\nPre-assigned test credentials (use these exact values in the users table):\n${
+        Object.entries(roleCredentials)
+          .map(([r, c]) => `  ${r}: email=${c.email}, password=${c.password}`)
+          .join("\n")
+      }`
+    : "";
+
   const userMessage = `
 Scenario: ${prompt}
 Role: ${role}
 Database Schema:
-${JSON.stringify(dbSchema, null, 2)}
+${JSON.stringify(dbSchema, null, 2)}${credentialsSection}
   `.trim();
 
   try {
